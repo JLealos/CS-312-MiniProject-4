@@ -16,7 +16,7 @@ function createApp({ pool, sessionSecret } = {}) {
 
   const frontend = path.join(__dirname, '..', 'dist');
   app.use(express.static(frontend));
-  app.get(['/', '/signin', '/signup', '/posts/:id', '/posts/:id/edit'], (req, res) => {
+  app.get(['/', '/signin', '/signup', '/profile', '/posts/:id', '/posts/:id/edit'], (req, res) => {
     res.sendFile(path.join(frontend, 'index.html'));
   });
   app.use((req, res) => res.status(404).json({ error: 'Page not found.' }));

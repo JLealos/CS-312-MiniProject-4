@@ -3,11 +3,14 @@ import { api } from '../api';
 
 export default function AuthForm({ signup, registered, onSuccess, navigate }) {
   const [userId, setUserId] = useState(''), [name, setName] = useState(''), [password, setPassword] = useState('');
+  const [age, setAge] = useState(''), [occupation, setOccupation] = useState(''), [city, setCity] = useState('');
   const [error, setError] = useState(''), [busy, setBusy] = useState(false);
   async function submit(event) {
     event.preventDefault(); setBusy(true); setError('');
     try {
-      const result = await api(signup ? '/signup' : '/signin', { method: 'POST', body: { user_id: userId, name, password } });
+      const result = await api(signup ? '/signup' : '/signin', { method: 'POST', body: {
+        user_id: userId, password, ...(signup ? { name, age, occupation, city } : {}),
+      } });
       onSuccess(result);
     } catch (error) { setError(error.message); }
     finally { setBusy(false); }
@@ -20,6 +23,12 @@ export default function AuthForm({ signup, registered, onSuccess, navigate }) {
     <form onSubmit={submit}><fieldset disabled={busy}>
       <div className="mb-3"><label className="form-label" htmlFor="user_id">User ID</label><input className="form-control" id="user_id" autoComplete="username" maxLength={255} value={userId} onChange={e => setUserId(e.target.value)} required /></div>
       {signup && <div className="mb-3"><label className="form-label" htmlFor="name">Your name</label><input className="form-control" id="name" autoComplete="name" maxLength={255} value={name} onChange={e => setName(e.target.value)} required /></div>}
+      {signup && <fieldset className="mb-3">
+        <legend className="fs-6">About you <span className="text-secondary small">(optional)</span></legend>
+        <div className="mb-3"><label className="form-label" htmlFor="age">Age</label><input className="form-control" id="age" type="number" min="0" max="120" step="1" value={age} onChange={e => setAge(e.target.value)} /></div>
+        <div className="mb-3"><label className="form-label" htmlFor="occupation">Occupation</label><input className="form-control" id="occupation" autoComplete="organization-title" maxLength={255} value={occupation} onChange={e => setOccupation(e.target.value)} /></div>
+        <div><label className="form-label" htmlFor="city">City</label><input className="form-control" id="city" autoComplete="address-level2" maxLength={255} value={city} onChange={e => setCity(e.target.value)} /></div>
+      </fieldset>}
       <div className="mb-3"><label className="form-label" htmlFor="password">Password</label><input className="form-control" id="password" type="password" autoComplete={signup ? 'new-password' : 'current-password'} minLength={signup ? 8 : undefined} maxLength={1024} value={password} onChange={e => setPassword(e.target.value)} aria-describedby={signup ? 'password-help' : undefined} required />
         {signup && <div className="form-text" id="password-help">Use at least 8 characters.</div>}</div>
       <button className="btn btn-primary w-100" type="submit">{busy ? 'Please wait…' : signup ? 'Sign up' : 'Sign in'}</button>

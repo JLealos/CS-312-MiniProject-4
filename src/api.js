@@ -58,14 +58,55 @@ function createApi({ pool }) {
     next();
   }
   api.get('/session', (req, res) => res.json({ user: userJson(req.user), csrfToken: req.session.csrfToken }));
+  api.get('/profile', requireUser, async (req, res) => {
+    const { rows: users } = await pool.query(
+      'SELECT user_id, name, age, occupation, city FROM users WHERE user_id = $1', [req.user.user_id],
+    );
+    const { rows } = await pool.query(`SELECT b.*,
+      (SELECT COUNT(*)::integer FROM blog_reactions WHERE blog_id = b.blog_id AND reaction = 'like') AS likes,
+      (SELECT COUNT(*)::integer FROM blog_reactions WHERE blog_id = b.blog_id AND reaction = 'dislike') AS dislikes,
+      (SELECT reaction FROM blog_reactions WHERE blog_id = b.blog_id AND user_id = $1) AS current_reaction
+      FROM blogs b WHERE b.creator_user_id = $1 ORDER BY b.date_created DESC, b.blog_id DESC`, [req.user.user_id]);
+    res.json({ user: users[0], posts: rows.map(postJson) });
+  });
+  api.put('/profile', requireUser, async (req, res) => {
+    const name = text(req.body?.name);
+    const occupation = text(req.body?.occupation), city = text(req.body?.city);
+    const ageInput = req.body?.age;
+    const ageMissing = ageInput === undefined || ageInput === null || ageInput === '';
+    const age = ageMissing ? null : Number(ageInput);
+    if (!name || name.length > 255) return fail(res, 400, 'Enter a name with at most 255 characters.');
+    if (!ageMissing && (!['number', 'string'].includes(typeof ageInput) || !/^\d+$/.test(String(ageInput)) || !Number.isInteger(age) || age < 0 || age > 120)) {
+      return fail(res, 400, 'Age must be a whole number between 0 and 120, or left blank.');
+    }
+    if (occupation.length > 255 || city.length > 255) return fail(res, 400, 'Occupation and city must be at most 255 characters.');
+    const { rows } = await pool.query(
+      `UPDATE users SET name = $1, age = $2, occupation = $3, city = $4
+       WHERE user_id = $5 RETURNING user_id, name, age, occupation, city`,
+      [name, age, occupation || null, city || null, req.user.user_id],
+    );
+    if (!rows[0]) return fail(res, 404, 'User not found.');
+    res.json({ user: rows[0] });
+  });
   api.post('/signup', async (req, res) => {
     const userId = text(req.body?.user_id), name = text(req.body?.name);
     const password = typeof req.body?.password === 'string' ? req.body.password : '';
+    const ageInput = req.body?.age;
+    const ageMissing = ageInput === undefined || ageInput === null || ageInput === '';
+    const age = ageMissing ? null : Number(ageInput);
+    if (!ageMissing && (!['number', 'string'].includes(typeof ageInput) || !/^\d+$/.test(String(ageInput)) || !Number.isInteger(age) || age < 0 || age > 120)) {
+      return fail(res, 400, 'Age must be a whole number between 0 and 120, or left blank.');
+    }
+    const occupation = text(req.body?.occupation), city = text(req.body?.city);
+    if (occupation.length > 255 || city.length > 255) {
+      return fail(res, 400, 'Occupation and city must be at most 255 characters.');
+    }
     if (!userId || !name || password.length < 8 || userId.length > 255 || name.length > 255 || password.length > 1024) {
       return fail(res, 400, 'Enter a user ID and name (at most 255 characters) and a password of 8–1024 characters.');
     }
     try {
-      await pool.query('INSERT INTO users (user_id, password, name) VALUES ($1, $2, $3)', [userId, await hashPassword(password), name]);
+      await pool.query('INSERT INTO users (user_id, password, name, age, occupation, city) VALUES ($1, $2, $3, $4, $5, $6)',
+        [userId, await hashPassword(password), name, age, occupation || null, city || null]);
     } catch (error) {
       if (error.code === '23505') return fail(res, 409, 'That user ID is taken. Please choose another.');
       throw error;

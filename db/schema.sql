@@ -4,6 +4,11 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(255) NOT NULL
 );
 
+-- Safe to rerun for databases created before profile fields were added.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS age INTEGER CHECK (age BETWEEN 0 AND 120);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS occupation VARCHAR(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS city VARCHAR(255);
+
 CREATE TABLE IF NOT EXISTS blogs (
   blog_id SERIAL PRIMARY KEY,
   creator_name VARCHAR(255) NOT NULL,

@@ -5,6 +5,7 @@ import Signin from './components/Signin';
 import BlogPostForm from './components/BlogPostForm';
 import PostList from './components/PostList';
 import PostPage from './components/PostPage';
+import MyProfile from './components/MyProfile';
 
 function CreateDialog({ user, onClose, onSaved }) {
   const dialog = useRef(null);
@@ -40,7 +41,7 @@ export default function App() {
     return () => window.removeEventListener('popstate', pop);
   }, []);
   useEffect(() => {
-    document.title = `${url.pathname === '/signup' ? 'Sign up' : url.pathname === '/signin' ? 'Sign in' : 'Blog'} | The Community Notebook`;
+    document.title = `${url.pathname === '/signup' ? 'Sign up' : url.pathname === '/signin' ? 'Sign in' : url.pathname === '/profile' ? 'My Profile' : 'Blog'} | The Community Notebook`;
   }, [location]);
   async function logout() {
     setBusy(true); setError('');
@@ -52,12 +53,13 @@ export default function App() {
   const link = (path) => (event) => { if (!event.ctrlKey && !event.metaKey && !event.shiftKey && event.button === 0) { event.preventDefault(); navigate(path); } };
   return <>
     <nav className="navbar border-bottom bg-white"><div className="container gap-2"><a className="navbar-brand" href="/" onClick={link('/')}>The Community Notebook</a>
-      <div className="d-flex flex-wrap align-items-center gap-2">{user ? <><span className="text-secondary small">Hi, {user.name}</span><button className="btn btn-sm btn-outline-secondary" disabled={busy} onClick={logout}>Sign out</button></> : session && <><a className="btn btn-sm btn-outline-secondary" href="/signin" onClick={link('/signin')}>Sign in</a><a className="btn btn-sm btn-primary" href="/signup" onClick={link('/signup')}>Sign up</a></>}</div>
+      <div className="d-flex flex-wrap align-items-center gap-2">{user ? <><span className="text-secondary small">Hi, {user.name}</span><a className="btn btn-sm btn-outline-primary" href="/profile" onClick={link('/profile')} aria-current={url.pathname === '/profile' ? 'page' : undefined}>My Profile</a><button className="btn btn-sm btn-outline-secondary" disabled={busy} onClick={logout}>Sign out</button></> : session && <><a className="btn btn-sm btn-outline-secondary" href="/signin" onClick={link('/signin')}>Sign in</a><a className="btn btn-sm btn-primary" href="/signup" onClick={link('/signup')}>Sign up</a></>}</div>
     </div></nav>
     {error && <div className="container mt-3"><div className="alert alert-danger" role="alert">{error} {!session && <button className="btn btn-sm btn-outline-danger" onClick={loadSession}>Retry</button>}</div></div>}
     {!session ? !error && <main className="container py-4" role="status">Loading notebook…</main>
       : url.pathname === '/signup' ? <Signup navigate={navigate} onSuccess={() => navigate('/signin?registered=1')} />
       : url.pathname === '/signin' ? <Signin navigate={navigate} registered={url.searchParams.get('registered') === '1'} onSuccess={data => { setSession(data); navigate('/'); }} />
+      : url.pathname === '/profile' ? <MyProfile user={user} navigate={navigate} onUserUpdated={updated => setSession(current => ({ ...current, user: { user_id: updated.user_id, name: updated.name } }))} />
       : url.pathname === '/' ? <main className="container py-4"><header className="intro p-4 p-md-5 mb-4 rounded"><p className="text-uppercase small mb-2">The Community Notebook</p><h1 className="display-5">A space to share your good ideas.</h1><p className="lead mb-0">Write something worth sharing and find posts from the community.</p></header>
         <PostList user={user} navigate={navigate} search={url.search} revision={revision} onCreate={() => setCreating(true)} /></main>
       : postRoute ? <PostPage key={url.pathname} id={postRoute[1]} editing={Boolean(postRoute[2])} user={user} navigate={navigate} />
