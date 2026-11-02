@@ -1,0 +1,29 @@
+{
+  "name": "cs-312-mini-project-3",
+  "version": "1.0.0",
+  "description": "A PostgreSQL blog with user accounts, built with Node.js, Express.js, and EJS.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "db:setup": "node scripts/setup-db.js"
+  },
+  "keywords": [
+    "blog",
+    "express",
+    "ejs"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "connect-pg-simple": "^10.0.0",
+    "dotenv": "^18.0.7",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "express-session": "^1.19.0",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

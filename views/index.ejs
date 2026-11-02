@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('partials/head') %>
+  </head>
+  <body>
+    <%- include('partials/nav') %>
+
+    <main class="container py-4">
+      <header class="intro p-4 p-md-5 mb-4 rounded">
+        <p class="text-uppercase small mb-2">The Community Notebook</p>
+        <h1 class="display-5">A space to share your good ideas.</h1>
+        <p class="lead mb-0">Write something worth sharing and find posts from the community.</p>
+      </header>
+
+      <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center mb-3">
+        <div>
+          <h2 class="h3 mb-1">Published posts</h2>
+          <p class="text-secondary mb-0"><%= totalPosts %> <%= totalPosts === 1 ? 'entry' : 'entries' %></p>
+        </div>
+        <% if (currentUser) { %>
+          <button class="btn btn-primary new-entry-button" type="button" data-bs-toggle="modal" data-bs-target="#new-post-modal">Start a new entry</button>
+        <% } else { %>
+          <a class="btn btn-primary new-entry-button" href="/signin">Sign in to write</a>
+        <% } %>
+      </div>
+
+      <form action="/" method="get" class="row g-2 align-items-end mb-4">
+        <div class="col-md-5">
+          <label class="form-label" for="tag-filter">Topic</label>
+          <select class="form-select" id="tag-filter" name="tag">
+            <option value="">All topics</option>
+            <% availableTags.forEach((tag) => { %>
+              <option value="<%= tag %>" <%= selectedTag === tag ? 'selected' : '' %>><%= tag %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="col-md-5">
+          <label class="form-label" for="sort-order">Sort by</label>
+          <select class="form-select" id="sort-order" name="sort">
+            <option value="newest" <%= sortOrder === 'newest' ? 'selected' : '' %>>Newest first</option>
+            <option value="oldest" <%= sortOrder === 'oldest' ? 'selected' : '' %>>Oldest first</option>
+          </select>
+        </div>
+        <div class="col-md-2 d-grid">
+          <button class="btn btn-outline-secondary" type="submit">Apply</button>
+        </div>
+      </form>
+
+      <% if (posts.length === 0) { %>
+        <div class="alert alert-light border">
+          <%= selectedTag ? `No posts found with the tag "${selectedTag}".` : 'No posts yet. Create the first one.' %>
+        </div>
+      <% } %>
+
+      <div class="row g-3">
+        <% posts.forEach((post) => { %>
+          <article class="col-12">
+            <div class="card post-card h-100">
+              <div class="card-body">
+                <div class="d-flex flex-wrap gap-2 justify-content-between mb-2 post-meta">
+                  <small class="text-secondary"><time datetime="<%= post.createdAt.toISOString() %>"><%= post.createdAt.toLocaleString() %></time></small>
+                  <small class="text-secondary">By <%= post.author %></small>
+                </div>
+                <h3 class="card-title h4"><%= post.title %></h3>
+                <% if (post.tags.length > 0) { %>
+                  <div class="mb-3">
+                    <% post.tags.forEach((tag) => { %>
+                      <a class="badge rounded-pill text-bg-warning text-decoration-none me-1" href="/?tag=<%= encodeURIComponent(tag) %>">#<%= tag %></a>
+                    <% }) %>
+                  </div>
+                <% } %>
+                <p class="card-text post-content"><%= post.content %></p>
+                <% if (post.updatedAt) { %>
+                  <p class="text-secondary small">Updated <%= post.updatedAt.toLocaleString() %></p>
+                <% } %>
+                <div class="d-flex flex-wrap gap-2 align-items-center border-top pt-3">
+                  <% if (currentUser) { %>
+                  <form action="/posts/<%= post.id %>/react" method="post" class="d-flex gap-2">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button class="btn btn-sm <%= post.currentReaction === 'like' ? 'btn-success' : 'btn-outline-success' %>" type="submit" name="reaction" value="<%= post.currentReaction === 'like' ? 'remove' : 'like' %>" aria-pressed="<%= post.currentReaction === 'like' %>">Like (<%= post.likes %>)</button>
+                    <button class="btn btn-sm <%= post.currentReaction === 'dislike' ? 'btn-secondary' : 'btn-outline-secondary' %>" type="submit" name="reaction" value="<%= post.currentReaction === 'dislike' ? 'remove' : 'dislike' %>" aria-pressed="<%= post.currentReaction === 'dislike' %>">Dislike (<%= post.dislikes %>)</button>
+                  </form>
+                  <% } else { %>
+                    <span class="text-secondary small">Likes: <%= post.likes %> &middot; Dislikes: <%= post.dislikes %></span>
+                  <% } %>
+                  <% if (currentUser && currentUser.user_id === post.creatorUserId) { %>
+                  <a class="btn btn-sm btn-outline-primary" href="/posts/<%= post.id %>/edit">Edit</a>
+                  <form action="/posts/<%= post.id %>/delete" method="post">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                  </form>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+
+      <% if (pageCount > 1) { %>
+        <nav class="mt-4" aria-label="Post pages">
+          <ul class="pagination justify-content-center">
+            <% for (let page = 1; page <= pageCount; page += 1) { %>
+              <li class="page-item <%= page === currentPage ? 'active' : '' %>">
+                <a class="page-link" href="/?page=<%= page %>&tag=<%= encodeURIComponent(selectedTag) %>&sort=<%= sortOrder %>"><%= page %></a>
+              </li>
+            <% } %>
+          </ul>
+        </nav>
+      <% } %>
+    </main>
+
+    <footer class="text-center text-secondary small py-4">Made locally, shared thoughtfully</footer>
+
+    <% if (currentUser) { %>
+    <div class="modal fade" id="new-post-modal" tabindex="-1" aria-labelledby="create-post-heading" aria-hidden="true" data-open="<%= error ? 'true' : 'false' %>">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title fs-5" id="create-post-heading">Create a post</h2>
+            <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <% if (error) { %>
+              <div class="alert alert-danger" role="alert"><%= error %></div>
+            <% } %>
+            <form action="/posts" method="post">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <div class="mb-3">
+                <p class="text-secondary">Posting as <strong><%= currentUser.name %></strong></p>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="title">Title</label>
+                <input class="form-control" id="title" name="title" type="text" maxlength="255" value="<%= formData.title || '' %>" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="tags">Tags <span class="text-secondary small">comma-separated</span></label>
+                <input class="form-control" id="tags" name="tags" type="text" value="<%= formData.tags || '' %>">
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="content">Blog content</label>
+                <textarea class="form-control" id="content" name="content" rows="7" required><%= formData.content || '' %></textarea>
+              </div>
+              <button class="btn btn-primary w-100" type="submit">Publish post</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% } %>
+    <!-- Bootstrap JavaScript provides the modal behavior. -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/forms.js"></script>
+  </body>
+</html>
