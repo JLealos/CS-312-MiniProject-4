@@ -31,6 +31,7 @@ function createApp({ pool, sessionSecret } = {}) {
   app.set('view engine', 'ejs');
   app.set('views', path.join(__dirname, '..', 'views'));
   app.use(express.urlencoded({ extended: false, limit: '100kb' }));
+  app.use(express.json({ limit: '100kb' }));
   app.use(express.static(path.join(__dirname, '..', 'public')));
   app.use(session({
     name: 'notebook.sid',
@@ -40,6 +41,8 @@ function createApp({ pool, sessionSecret } = {}) {
     saveUninitialized: false,
     cookie: { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 86400000 },
   }));
+
+  app.use('/api', require('./api').createApi({ pool }));
 
   app.use(async (request, response, next) => {
     if (!request.session.csrfToken) request.session.csrfToken = randomBytes(32).toString('hex');
@@ -249,6 +252,10 @@ function createApp({ pool, sessionSecret } = {}) {
 
   app.use((error, request, response, next) => {
     if (response.headersSent) return next(error);
+    if (request.path === '/api' || request.path.startsWith('/api/')) {
+      const status = [400, 413, 415].includes(error.status) ? error.status : 500;
+      return response.status(status).json({ error: status === 500 ? 'Could not complete your request. Please try again.' : 'Invalid JSON request or request body too large.' });
+    }
     console.error(error.message);
     response.locals.currentUser ??= null;
     response.locals.csrfToken ??= '';
