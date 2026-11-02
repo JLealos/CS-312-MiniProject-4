@@ -5,6 +5,8 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "build": "vite build",
+    "dev:client": "vite",
     "dev": "nodemon src/server.js",
     "test:api": "node scripts/test-api.js",
     "db:setup": "node scripts/setup-db.js"
@@ -17,14 +19,17 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bootstrap": "^5.3.8",
     "connect-pg-simple": "^10.0.0",
     "dotenv": "^18.0.7",
-    "ejs": "^3.1.10",
     "express": "^5.1.0",
     "express-session": "^1.19.0",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "vite": "^8.3.5"
   }
 }
