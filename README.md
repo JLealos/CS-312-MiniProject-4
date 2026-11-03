@@ -34,3 +34,16 @@ PORT=3000
 ```
 
 Demo logins: `tony` / `IronMan312!`, `steve` / `CaptainAmerica312!`, and `peter` / `SpiderMan312!`. Reactions are saved per user: one like or dislike per post; click the selected reaction to remove it. The five starter posts are themed around the Marvel characters. Setup can be rerun without duplicating seed entries.
+
+## Mini Project 4
+
+Replaced the EJS frontend with React. Express now provides JSON API endpoints, and React uses fetch to load and update data without full-page reloads.
+
+- React signup and signin components connected to backend authentication.
+- Controlled fields in `BlogPostForm.js` for creating posts and editing prefilled posts.
+- `PostList.js` fetches posts and renders them using `.map()`, with dynamic viewing, editing, and deletion.
+- My Profile shows the signed-in user's posts, username, name, age, occupation, and city.
+- Optional age, occupation, and city fields during signup, plus an editable profile for existing users.
+- Preserved PostgreSQL storage, hashed passwords, sessions, CSRF protection, owner-only editing/deletion, tags, sorting, pagination, reactions, and responsive styling.
+
+Run `npm run db:setup` to add the profile fields to an existing database, then `npm run build` and `npm start`. For frontend development, run `npm run dev` and `npm run dev:client` in separate terminals.
